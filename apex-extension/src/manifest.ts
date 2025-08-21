@@ -2,9 +2,9 @@ import { defineManifest } from '@crxjs/vite-plugin';
 
 export default defineManifest({
   manifest_version: 3,
-  name: 'My React Chrome Extension',
+  name: 'Apex Quiz Automation',
   version: '1.0.0',
-  description: 'A modern Chrome extension built with React, TypeScript, and Tailwind CSS',
+  description: 'Automate Apex Learning quizzes with AI-powered question analysis',
   
   action: { 
     default_popup: 'src/popup/index.html',
@@ -21,8 +21,6 @@ export default defineManifest({
     type: 'module'
   },
   
-  options_page: 'src/options/index.html',
-  
   icons: {
     '16': 'icons/icon16.svg',
     '32': 'icons/icon32.svg',
@@ -32,15 +30,19 @@ export default defineManifest({
   
   permissions: [
     'storage',
-    'tabs'
+    'tabs',
+    'activeTab'
   ],
   
-  host_permissions: [],
+  host_permissions: [
+    '*://*.apexlearning.com/*',
+    '*://course.apexlearning.com/*'
+  ],
   
   content_scripts: [
     {
-      matches: ['<all_urls>'],
-      js: ['src/content/main.tsx'],
+      matches: ['*://*.apexlearning.com/*', '*://course.apexlearning.com/*'],
+      js: ['src/content/index.ts'],
       run_at: 'document_idle',
     },
   ],
@@ -48,7 +50,7 @@ export default defineManifest({
   web_accessible_resources: [
     {
       resources: ['assets/*', 'icons/*'],
-      matches: ['<all_urls>'],
+      matches: ['*://*.apexlearning.com/*', '*://course.apexlearning.com/*'],
     },
   ],
 });

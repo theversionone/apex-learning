@@ -1,0 +1,153 @@
+import { QuizDetector } from './quiz-detector';
+import { ExtensionMessage, QuizState } from '../lib/types';
+
+class ContentScript {
+  private detector: QuizDetector;
+  private isActive = false;
+  private quizState: QuizState = {
+    isActive: false,
+    currentQuestion: 0,
+    totalQuestions: 0,
+    answers: []
+  };
+
+  constructor() {
+    this.detector = new QuizDetector();
+    this.init();
+  }
+
+  private init() {
+    // Listen for messages from popup/background
+    chrome.runtime.onMessage.addListener((message: ExtensionMessage, sender, sendResponse) => {
+      this.handleMessage(message, sendResponse);
+      return true;
+    });
+
+    // Check if we're on a quiz page
+    this.checkQuizPage();
+    
+    // Add visual indicator if quiz detected
+    if (this.detector.isQuizPage()) {
+      this.addQuizIndicator();
+    }
+    
+    // Set up dynamic content monitoring
+    this.setupDynamicMonitoring();
+  }
+
+  private setupDynamicMonitoring() {
+    // Monitor for quiz content loading
+    const observer = new MutationObserver((mutations) => {
+      let shouldRecheck = false;
+      
+      mutations.forEach((mutation) => {
+        if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
+          mutation.addedNodes.forEach((node) => {
+            if (node.nodeType === Node.ELEMENT_NODE) {
+              const element = node as Element;
+              if (element.querySelector?.('.sia-question-number, .sia-input, [class*="kp-generated-"]')) {
+                shouldRecheck = true;
+              }
+            }
+          });
+        }
+      });
+      
+      if (shouldRecheck) {
+        setTimeout(() => this.recheckQuizContent(), 1000);
+      }
+    });
+
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true
+    });
+
+    // Delayed checks for slow-loading content
+    setTimeout(() => this.recheckQuizContent(), 2000);
+    setTimeout(() => this.recheckQuizContent(), 5000);
+  }
+
+  private recheckQuizContent() {
+    const questions = this.detector.getQuestions();
+    
+    if (questions.length > 0 && this.quizState.totalQuestions === 0) {
+      this.quizState.totalQuestions = questions.length;
+      console.log(`✅ Quiz loaded: ${questions.length} question(s) found`);
+    }
+  }
+
+  private async handleMessage(message: ExtensionMessage, sendResponse: Function) {
+    switch (message.type) {
+      case 'START_QUIZ':
+        await this.startQuiz();
+        sendResponse({ success: true, state: this.quizState });
+        break;
+      
+      case 'STOP_QUIZ':
+        this.stopQuiz();
+        sendResponse({ success: true, state: this.quizState });
+        break;
+      
+      case 'QUIZ_STATUS':
+        sendResponse({ 
+          isQuizPage: this.detector.isQuizPage(),
+          state: this.quizState 
+        });
+        break;
+    }
+  }
+
+  private checkQuizPage() {
+    if (this.detector.isQuizPage()) {
+      // Notify background script
+      chrome.runtime.sendMessage({ 
+        type: 'QUIZ_PAGE_DETECTED',
+        data: { url: window.location.href }
+      });
+    }
+  }
+
+  private async startQuiz() {
+    if (!this.detector.isQuizPage()) return;
+    
+    this.isActive = true;
+    this.quizState.isActive = true;
+    
+    const questions = this.detector.getQuestions();
+    this.quizState.totalQuestions = questions.length;
+    this.quizState.currentQuestion = 0;
+  }
+
+  private stopQuiz() {
+    this.isActive = false;
+    this.quizState.isActive = false;
+  }
+
+  private addQuizIndicator() {
+    const indicator = document.createElement('div');
+    indicator.id = 'apex-extension-indicator';
+    indicator.textContent = '🤖 Apex Extension Active';
+    indicator.style.cssText = `
+      position: fixed;
+      top: 10px;
+      right: 10px;
+      background: #22c55e;
+      color: white;
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: bold;
+      z-index: 10000;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    `;
+    document.body.appendChild(indicator);
+  }
+}
+
+// Initialize when page loads
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => new ContentScript());
+} else {
+  new ContentScript();
+}
