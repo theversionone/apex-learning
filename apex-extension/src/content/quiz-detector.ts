@@ -19,12 +19,14 @@ export class QuizDetector {
     const questionText = this.getApexQuestionText();
     const questionNumber = this.getApexQuestionNumber();
     const options = this.getApexAnswerOptions();
+    const imageUrl = this.getApexQuestionImage();
     
     if (questionText) {
       return [{
         id: `apex-question-${questionNumber || 1}`,
-        type: 'multiple-choice',
+        type: 'multiple-choice', // Keep as multiple-choice regardless of image
         text: questionText,
+        imageUrl: imageUrl,
         options: options,
         element: document.body
       }];
@@ -74,6 +76,12 @@ export class QuizDetector {
     });
     
     return options;
+  }
+
+  private getApexQuestionImage(): string | undefined {
+    // Look for images in question area
+    const questionImage = document.querySelector('at-image img, .sia-question-stem img');
+    return questionImage?.getAttribute('src') || undefined;
   }
 
 }

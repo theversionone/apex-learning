@@ -68,7 +68,15 @@ class ContentScript {
     
     if (questions.length > 0 && this.quizState.totalQuestions === 0) {
       this.quizState.totalQuestions = questions.length;
+      const question = questions[0];
+      
       console.log(`✅ Quiz loaded: ${questions.length} question(s) found`);
+      console.log(`📝 Question type: ${question.type}`);
+      if (question.imageUrl) {
+        console.log(`🖼️ Image detected: ${question.imageUrl}`);
+      } else {
+        console.log(`📄 Text-only question`);
+      }
     }
   }
 
