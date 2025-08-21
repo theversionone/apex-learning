@@ -26,11 +26,6 @@ class ContentScript {
     // Check if we're on a quiz page
     this.checkQuizPage();
     
-    // Add visual indicator if quiz detected
-    if (this.detector.isQuizPage()) {
-      this.addQuizIndicator();
-    }
-    
     // Set up dynamic content monitoring
     this.setupDynamicMonitoring();
   }
@@ -124,25 +119,6 @@ class ContentScript {
     this.quizState.isActive = false;
   }
 
-  private addQuizIndicator() {
-    const indicator = document.createElement('div');
-    indicator.id = 'apex-extension-indicator';
-    indicator.textContent = '🤖 Apex Extension Active';
-    indicator.style.cssText = `
-      position: fixed;
-      top: 10px;
-      right: 10px;
-      background: #22c55e;
-      color: white;
-      padding: 8px 12px;
-      border-radius: 6px;
-      font-size: 12px;
-      font-weight: bold;
-      z-index: 10000;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-    `;
-    document.body.appendChild(indicator);
-  }
 }
 
 // Initialize when page loads

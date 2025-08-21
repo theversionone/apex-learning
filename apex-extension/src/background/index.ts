@@ -30,7 +30,7 @@ class BackgroundScript {
   ) {
     switch (message.type) {
       case 'QUIZ_PAGE_DETECTED':
-        this.updateBadge(sender.tab?.id, 'QUIZ');
+        // Quiz page detected - no action needed
         break;
 
       case 'START_QUIZ':
@@ -49,27 +49,10 @@ class BackgroundScript {
 
   private async checkTabForQuiz(tabId: number) {
     try {
-      const response = await chrome.tabs.sendMessage(tabId, { type: 'QUIZ_STATUS' });
-      if (response?.isQuizPage) {
-        this.updateBadge(tabId, 'QUIZ');
-      } else {
-        this.clearBadge(tabId);
-      }
+      await chrome.tabs.sendMessage(tabId, { type: 'QUIZ_STATUS' });
     } catch (error) {
       // Content script not ready or not injected
-      this.clearBadge(tabId);
     }
-  }
-
-  private updateBadge(tabId: number | undefined, text: string) {
-    if (tabId) {
-      chrome.action.setBadgeText({ text, tabId });
-      chrome.action.setBadgeBackgroundColor({ color: '#22c55e', tabId });
-    }
-  }
-
-  private clearBadge(tabId: number) {
-    chrome.action.setBadgeText({ text: '', tabId });
   }
 
   private async handleQuestionAnswering(questionData: any, sendResponse: Function) {
